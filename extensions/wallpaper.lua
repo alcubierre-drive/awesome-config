@@ -4,7 +4,7 @@
 local lfs = require("lfs")
 local Cairo = require("lgi").cairo
 wp_files = {}
-wp_path = "INSERT_FULL_PATH_OF_FOLDER_WITH_WALLPAPERS"
+wp_path = "/path/to/your/wallpapers/"
 set_directories = true
 show_hidden_files = false
 wp_notification = true
@@ -12,7 +12,7 @@ wp_timeout  = 3600*2.5
 
 function apply_desktop_wallpaper(wp_file)
     -- declare variables
-    local my_desktop = "INSERT_FULL_PATH_TO_DISPLAY_ON_WALLPAPER"
+    local my_desktop = "/path/to/your/desktop/"
     local my_fontsize = 14
     local font_border_alpha = 0.6
     local font_color = 0.1
@@ -110,7 +110,7 @@ random_wallpaper = 'random'
 math.randomseed(os.time())
 wp_index = math.random( 1, #wp_files)
 -- timer
-wp_timer = timer { timeout = wp_timeout }
+wp_timer = gears.timer { timeout = wp_timeout }
 wp_timer:connect_signal("timeout", function()
     if random_wallpaper == 'random' then
         wp_index = math.random( 1, #wp_files)

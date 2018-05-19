@@ -5,7 +5,11 @@ function run_once(cmd)
     if firstspace then
         findme = cmd:sub(0, firstspace-1)
     end
-    awful.util.spawn_with_shell("bash -c 'pgrep -u $USER -x " .. findme .. " > /dev/null || (" .. cmd .. ")'")
+    if #findme > 15 then
+        -- avoid pgrep throwing warnings.
+        findme = findme:sub(0,15)
+    end
+    awful.spawn.with_shell("bash -c 'pgrep -u $USER -x " .. findme .. " > /dev/null || (" .. cmd .. ")'")
 end
 
 commands = {

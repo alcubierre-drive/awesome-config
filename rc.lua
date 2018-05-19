@@ -7,12 +7,16 @@ wibox = require("wibox")
 vicious = require("vicious")
 beautiful = require("beautiful")
 naughty = require("naughty")
-menubar = require("menubar")
+menubar = require("mymenubar")
+-- switcher = require("awesome-switcher")
+-- TODO set option that disables switcher by global variable, which then is 
+-- turned true / false with alt-i? --> no taskbar, no switcher.
 menubar.show_categories = false
-
+menubar.geometry = {height = 19}
+--menubar.cache_entries = true
 -- define extensions dir
-extensiondir = "INSERT_FULL_PATH_TO_extensions/"
-themingdir = "INSERT_FULL_PATH_TO_THEME/"
+extensiondir = "~/.config/awesome/extensions/"
+themingdir = "~/.config/awesome/standard/"
 
 -- setup X: the script file needs to be linked to ~/.config/awesome/X_setup.sh
 -- io.popen(extensiondir .. "X_setup.sh")
@@ -41,6 +45,15 @@ modkey = "Mod4"
 
 -- theming to file
 beautiful.init(themingdir .. "theme.lua")
+    -- "hack" to change spotify notifications.
+    naughty.config.presets.spotify = {
+        callback = function(args)
+            return true
+        end,
+        icon_size = 64
+    }
+    table.insert(naughty.dbus.config.mapping, {{appname = "Spotify"},
+        naughty.config.presets.spotify})
 
 -- wallpapers that are changing with time
 dofile(extensiondir .. "wallpaper.lua")
@@ -98,3 +111,6 @@ client.connect_signal(
 
 -- autostart to file
 dofile(extensiondir .. "autostart.lua")
+
+-- integrate dmenu...
+-- https://github.com/naturalist/awesome-dmenu

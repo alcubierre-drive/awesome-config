@@ -58,7 +58,7 @@ function change_volume(x)
 	muell:close()
 end
 
-mytimer = timer({ timeout = 0.5 })
+mytimer = gears.timer({ timeout = 0.5 })
 mytimer:connect_signal("timeout", function () update_volume(volume_widget) end)
 mytimer:start()
 

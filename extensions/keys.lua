@@ -1,3 +1,5 @@
+-- script to make nice looking shortcuts with keygrabbing etc.
+-- dofile(extensiondir .. "shortcuts.lua")
 -- mouse
 wp_timer:emit_signal("timeout")
 root.buttons(awful.util.table.join(
@@ -99,6 +101,15 @@ root.buttons(awful.util.table.join(
 
 -- keys
 globalkeys = awful.util.table.join(
+    -- switcher
+    awful.key({ "Mod1"            }, "Tab",
+      function ()
+          switcher.switch( 1, "Mod1", "Alt_L", "Shift", "Tab")
+      end),
+    awful.key({ "Mod1", "Shift"   }, "Tab",
+      function ()
+          switcher.switch( 1, "Mod1", "Alt_L", "Shift", "Tab")
+      end),
     awful.key({ modkey,           }, "Left",   awful.tag.viewprev       ),
     awful.key({ modkey,           }, "Right",  awful.tag.viewnext       ),
     awful.key({ modkey,           }, "Escape", awful.tag.history.restore),
@@ -117,6 +128,8 @@ globalkeys = awful.util.table.join(
     awful.key({ modkey, "Shift"   }, "k", function () awful.client.swap.byidx( -1)    end),
     awful.key({ modkey, "Control" }, "j", function () awful.screen.focus_relative( 1) end),
     awful.key({ modkey, "Control" }, "k", function () awful.screen.focus_relative(-1) end),
+    -- TODO: Write function that sends client to next / prev screen, same
+    -- TODO  workspace!
     awful.key({ modkey,           }, "u", awful.client.urgent.jumpto),
     awful.key({ modkey,           }, "Tab",
         function ()
@@ -152,10 +165,23 @@ globalkeys = awful.util.table.join(
     awful.key({ modkey, "Control" }, "n", awful.client.restore),
     -- prompt / custom
     -- awful.key({ modkey },            "r",     function () mypromptbox[mouse.screen]:run() end),
-    awful.key({ modkey },            "r",     function () io.popen("dmenu_run") end),
+    awful.key({ modkey },            "r",     function () io.popen(
+        'dmenu_run -nb "#222222" -nf "#0088dd" -sb "#00aaff" -sf "#333333" -fn "Droid Sans Mono-10" -p run'
+        ) end),
+    awful.key({ modkey },            "e",     function () io.popen(
+        'networkmanager_dmenu -nb "#222222" -nf "#0088dd" -sb "#00aaff" -sf "#333333" -fn "Droid Sans Mono-10" -p net'
+        ) end),
     awful.key({},                    "Print", function () io.popen("import ~/Desktop/Screenshot.png") end),
     -- Menubar
-    awful.key({ modkey }, "p", function() menubar.show() end)
+    awful.key({ modkey }, "p", function() menubar.show() end),
+    -- toggle clock around the screen
+    awful.key({ modkey }, "c", function()
+        for s = 1,screen.count() do
+            AllMyClocks[s]:toggle()
+        end
+    end)
+    -- Launchers
+    --awful.key({ modkey }, "g", grab_keys)
 )
 clientkeys = awful.util.table.join(
     awful.key({ modkey,           }, "f",      function (c) c.fullscreen = not c.fullscreen  end),

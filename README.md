@@ -8,14 +8,15 @@ In order to use it, you need to edit the files
 
 and fill the variables
 
-<u>extensions/wallpaper.lua</u>
+`extensions/wallpaper.lua`
 
     wp_path
     my_desktop
 
-<u>rc.lua</u>
+`rc.lua`
 
     extensiondir
     themingdir
 
-with the desired content.
+with the desired content. The newest project, an *analogue clock around the 
+screen* can be found in `extensions/clock.lua`, where some settings can be made.

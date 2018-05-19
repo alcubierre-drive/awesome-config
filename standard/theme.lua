@@ -20,14 +20,19 @@ theme.border_marked = "#19b0dc"
 
 theme.tooltip_border_width = 2
 theme.tooltip_border_color = "#008aff"
+
+theme.menu_fg_focus = "#333333"
+theme.menu_bg_focus = "#00AAFF"
+theme.menu_fg_normal = "#0088dd"
+theme.menu_bg_normal = "#222222"
 --
 theme.taglist_squares_sel   = "~/.config/awesome/standard/taglist/full.png"
 theme.taglist_squares_unsel = "~/.config/awesome/standard/taglist/empt.png"
 
 theme.taglist_squares       = "true"
 theme.titlebar_close_button = "true"
-theme.menu_height           = 15
-theme.menu_width            = 100
+theme.menu_height           = 19
+theme.menu_width            = 300
 
 -- theme.useless_gap = 20
 

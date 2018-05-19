@@ -7,7 +7,7 @@ cal.register(datewidget,'<span color="#ffff00"><b><u>%s</u></b></span>')
 -- Systraywidget
 mysystray = wibox.widget.systray()
 -- Cpuwidget, memwidget, swapwidget
-cpuwidget = awful.widget.graph()
+cpuwidget = wibox.widget.graph()
 cpuwidget:set_width(20)
 cpuwidget:set_background_color(beautiful.widget_colors['background'])
 cpuwidget:set_color( {
@@ -19,7 +19,7 @@ cpuwidget:set_color( {
 --mensa = require('extensions/mensa') -- mensa @ cpu
 --mensa.register(cpuwidget)
 vicious.register(cpuwidget, vicious.widgets.cpu, "$1", 2)
-memwidget = awful.widget.graph()
+memwidget = wibox.widget.graph()
 memwidget:set_width(15)
 memwidget:set_background_color(beautiful.widget_colors['background'])
 memwidget:set_color( {
@@ -131,7 +131,7 @@ for s = 1, screen.count() do
     mypromptbox[s] = awful.widget.prompt()
     mytaglist[s] = awful.widget.taglist(s, awful.widget.taglist.filter.all, mytaglist.buttons)
     mytasklist[s] = awful.widget.tasklist(s, awful.widget.tasklist.filter.currenttags, mytasklist.buttons)
-    mywibox[s] = awful.wibox({ position = "bottom", screen = s })
+    mywibox[s] = awful.wibar({ position = "bottom", screen = s })
     -- Widgets that are aligned to the left
     left_layout = wibox.layout.fixed.horizontal()
     left_layout:add(mytaglist[s])
@@ -143,7 +143,7 @@ for s = 1, screen.count() do
     right_layout:add(volume_widget)
     right_layout:add(cpuwidget)
     right_layout:add(memwidget)
-    right_layout:add(wibox.layout.margin(mysystray,1,1,1,1))
+    right_layout:add(wibox.container.margin(mysystray,1,1,1,1))
     right_layout:add(kbdwidget)
     right_layout:add(datewidget)
     layout = wibox.layout.align.horizontal()
@@ -152,3 +152,7 @@ for s = 1, screen.count() do
     layout:set_right(right_layout)
     mywibox[s]:set_widget(layout)
 end
+
+-- project: analogue clock around the screen
+dofile(extensiondir .. "clock.lua")
+
