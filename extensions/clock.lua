@@ -25,7 +25,7 @@ end
 local function get_time ()
     local currtime = os.date("%I")+os.date("%M")/60.0+os.date("%S")/3600.0
     local pm = string.lower(os.date("%p"))
-    return currtime, pm
+    return currtime % 12, pm
 end
 
 local function get_progressbar(direction)
