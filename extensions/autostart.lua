@@ -1,29 +1,33 @@
 -- autostart
 function run_once(cmd)
-    findme = cmd
-    firstspace = cmd:find(" ")
+    if cmd[2] == nil then
+        findme = cmd[1]
+    else
+        findme = cmd[2]
+    end
+    firstspace = findme:find(" ")
     if firstspace then
-        findme = cmd:sub(0, firstspace-1)
+        findme = findme:sub(0, firstspace-1)
     end
     if #findme > 15 then
         -- avoid pgrep throwing warnings.
         findme = findme:sub(0,15)
     end
-    awful.spawn.with_shell("bash -c 'pgrep -u $USER -x " .. findme .. " > /dev/null || (" .. cmd .. ")'")
+    awful.spawn.with_shell("bash -c 'pgrep -u $USER -x " .. findme .. " > /dev/null || (" .. cmd[1] .. ")'")
 end
 
 commands = {
-    "nm-applet",
-    "blueman-applet",
-    "thunderbird",
-    "dropbox",
-    "owncloud",
-    --"telegram-desktop -startintray",
-    "telegram-desktop",
-    --"caprine --minimize",
-    "caprine",
-    --"Whatsapp",
-    "system-config-printer-applet"
+    {"nm-applet", nil},
+    {"blueman-applet", nil},
+    {"thunderbird", nil},
+    {"dropbox", nil},
+    {"owncloud", nil},
+    -- " -startintray"
+    {"telegram-desktop", nil},
+    -- " --minimize"
+    {"caprine", nil},
+    {"Whatsapp", "WhatsApp"},
+    {"system-config-printer-applet", "applet.py"},
 }
 
 for i = 1, #commands do
