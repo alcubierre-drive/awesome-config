@@ -1,11 +1,8 @@
 local math = require("math")
 local os = os
-local glib = require("lgi").GLib
-local DateTime = glib.DateTime
-local TimeZone = glib.TimeZone
 
 local settings = {
-    fg = { am = '#55a300', pm = '#a38d00' },
+    fg = { am = '#c3ff00', pm = '#ff6300' },
     bg = { am = '#050505', pm = '#050505' },
     width = 3
 }
@@ -20,12 +17,6 @@ local function create_wibar (position, screen)
         screen = screen,
     } )
     return mybar
-end
-
-local function get_time ()
-    local currtime = os.date("%I")+os.date("%M")/60.0+os.date("%S")/3600.0
-    local pm = string.lower(os.date("%p"))
-    return currtime % 12, pm
 end
 
 local function get_progressbar(direction)
@@ -79,17 +70,42 @@ local function list_pbars(pbars)
     return all_pbars_flat
 end
 
-local function get_pbar_info(currtime)
-    --angle = currtime / 6*math.pi
-    --pbar_number = math.floor(currtime/(12/8))
-    --pbar_fill = 12/8*(1-math.tan((angle-math.pi/2) % (math.pi/4)))
+local function get_time ()
+    local currtime = os.date("%I")+os.date("%M")/60.0+os.date("%S")/3600.0
+    local pm = string.lower(os.date("%p"))
+    return currtime % 12, pm
+end
+
+local get_pbar_info = {}
+get_pbar_info['hours'] = function(currtime)
     pbar_fill = currtime % (12/8)
     pbar_number = math.floor(currtime/(12/8))
     return pbar_fill,pbar_number
 end
+get_pbar_info['minutes'] = function(currtime)
+    minutes = 12*(currtime % 1)
+    pbar_fill = minutes % (12/8)
+    pbar_number = math.floor(minutes/(12/8))
+    return pbar_fill,pbar_number
+end
+get_pbar_info['seconds'] = function(currtime)
+    minutes = 3600*(currtime % 12)
+    seconds = (minutes % 60)/(60/12)
+    pbar_fill = seconds % (12/8)
+    pbar_number = math.floor(seconds/(12/8))
+    return pbar_fill,pbar_number
+end
 
-local function set_time(all_pbars, currtime, am_pm_str)
-    pbar_fill, pbar_number = get_pbar_info(currtime)
+ScreenClock = {}
+ScreenClock.__index = ScreenClock
+
+function ScreenClock:update()
+    local time, pm = get_time()
+    local all_pbars = self.ordered_pbars
+    local currtime = time
+    local am_pm_str = pm
+    local which = self.which
+    pbar_fill, pbar_number = get_pbar_info[which](currtime)
     for i = 1,pbar_number do
         all_pbars[i].color = settings.fg[am_pm_str]
         all_pbars[i].background_color = settings.bg[am_pm_str]
@@ -105,15 +121,7 @@ local function set_time(all_pbars, currtime, am_pm_str)
     end
 end
 
-local function toggle_all_wibars(mywibars)
-    for index, bar in pairs(mywibars) do
-        bar.visible = not bar.visible
-    end
-end
-
-ScreenClock = {}
-ScreenClock.__index = ScreenClock
-function ScreenClock:create(screen)
+function ScreenClock:create(screen, which)
     local mywibars = { }
     mywibars.top = create_wibar('top',screen)
     mywibars.bottom = create_wibar('bottom',screen)
@@ -129,32 +137,34 @@ function ScreenClock:create(screen)
 
     local my_ordered_pbars = list_pbars(mypbars)
 
-    local time, pm = get_time()
-    set_time(my_ordered_pbars, time, pm)
-
     myclock = {}
     setmetatable(myclock,ScreenClock)
     myclock.wibars = mywibars
     myclock.ordered_pbars = my_ordered_pbars
+    myclock.which = which
+    -- this is a little bit dirty, function only def'ed above...
+    myclock:update()
     return myclock
 end
 
 function ScreenClock:toggle()
-    toggle_all_wibars(self.wibars)
-end
-
-function ScreenClock:update()
-    local time, pm = get_time()
-    set_time(self.ordered_pbars, time, pm)
+    for index, bar in pairs(self.wibars) do
+        bar.visible = not bar.visible
+    end
 end
 
 -- reference implementation
 AllMyClocks = {}
 for s = 1,screen.count() do
-    AllMyClocks[s] = ScreenClock:create(s)
-    gears.timer {
-        timeout = 30,
-        autostart = true,
-        callback = function() AllMyClocks[s]:update() end
-    }
+    AllMyClocks[s] = ScreenClock:create(s, 'hours')
 end
+gears.timer {
+    timeout = 30,
+    autostart = true,
+    callback = function()
+        for s = 1, screen.count() do
+            AllMyClocks[s]:update()
+        end
+    end
+}
+

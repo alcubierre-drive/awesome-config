@@ -1,5 +1,5 @@
 -- script to make nice looking shortcuts with keygrabbing etc.
--- dofile(extensiondir .. "shortcuts.lua")
+dofile(extensiondir .. "shortcuts.lua")
 -- mouse
 wp_timer:emit_signal("timeout")
 root.buttons(awful.util.table.join(
@@ -128,8 +128,6 @@ globalkeys = awful.util.table.join(
     awful.key({ modkey, "Shift"   }, "k", function () awful.client.swap.byidx( -1)    end),
     awful.key({ modkey, "Control" }, "j", function () awful.screen.focus_relative( 1) end),
     awful.key({ modkey, "Control" }, "k", function () awful.screen.focus_relative(-1) end),
-    -- TODO: Write function that sends client to next / prev screen, same
-    -- TODO  workspace!
     awful.key({ modkey,           }, "u", awful.client.urgent.jumpto),
     awful.key({ modkey,           }, "Tab",
         function ()
@@ -179,16 +177,16 @@ globalkeys = awful.util.table.join(
         for s = 1,screen.count() do
             AllMyClocks[s]:toggle()
         end
-    end)
+    end),
     -- Launchers
-    --awful.key({ modkey }, "g", grab_keys)
+    awful.key({ modkey }, "g", grab_keys)
 )
 clientkeys = awful.util.table.join(
     awful.key({ modkey,           }, "f",      function (c) c.fullscreen = not c.fullscreen  end),
     awful.key({ modkey, "Shift"   }, "c",      function (c) c:kill()                         end),
     awful.key({ modkey, "Control" }, "space",  awful.client.floating.toggle                     ),
     awful.key({ modkey, "Control" }, "Return", function (c) c:swap(awful.client.getmaster()) end),
-    awful.key({ modkey, "Shift"   }, "o",      awful.client.movetoscreen                        ),
+    awful.key({ modkey, "Shift"   }, "o",      function (c) c:move_to_screen()               end),
     awful.key({ modkey,           }, "t",      function (c) c.ontop = not c.ontop            end),
     awful.key({ modkey,           }, "n",
         function (c)
@@ -271,7 +269,7 @@ awful.rules.rules = {
       properties = { tag = tags[1][8] } },
     { rule = { class = "Caprine" },
       properties = { tag = tags[1][8] } },
-    { rule = { class = "whatsapp-desktop" },
+    { rule = { class = "Whatsie" },
       properties = { tag = tags[1][8] } },
     -- { rule = { class = "gimp" },
     --   properties = { floating = true } },

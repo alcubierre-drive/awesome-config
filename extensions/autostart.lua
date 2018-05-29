@@ -26,7 +26,7 @@ commands = {
     {"telegram-desktop", nil},
     -- " --minimize"
     {"caprine", nil},
-    {"Whatsapp", "WhatsApp"},
+    {"whatsie", nil},
     {"system-config-printer-applet", "applet.py"},
 }
 

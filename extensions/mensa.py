@@ -4,7 +4,7 @@
 import sys
 from lxml import html
 
-url="http://www.studierendenwerk-aachen.de/speiseplaene/academica-w.html"
+url="https://www.studierendenwerk-aachen.de/speiseplaene/academica-w.html"
 week = [
         'montag',
         'dienstag',
