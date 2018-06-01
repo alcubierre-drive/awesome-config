@@ -3,8 +3,9 @@
 -- setting variables
 local lfs = require("lfs")
 local Cairo = require("lgi").cairo
+local os = os
 wp_files = {}
-wp_path = "/path/to/your/wallpapers/"
+wp_path = os.getenv("HOME") .. "/Wallpapers/"
 set_directories = true
 show_hidden_files = false
 wp_notification = true
@@ -12,7 +13,7 @@ wp_timeout  = 3600*2.5
 
 function apply_desktop_wallpaper(wp_file)
     -- declare variables
-    local my_desktop = "/path/to/your/desktop/"
+    local my_desktop = os.getenv("HOME") .. "/Desktop/"
     local my_fontsize = 14
     local font_border_alpha = 0.6
     local font_color = 0.1

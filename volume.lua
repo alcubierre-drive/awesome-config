@@ -57,8 +57,7 @@ function change_volume(x)
     if tonumber(x) > 0 then
         str = str .. "+"
     end
-    local muell = io.popen(str .. tonumber(x) .. '%')
-    muell:close()
+    awful.spawn.easy_async(str .. tonumber(x) .. '%', function () end)
 end
 
 mytimer = gears.timer({ timeout = 0.5 })
@@ -78,6 +77,6 @@ volume_widget:buttons(awful.util.table.join(
     end),
     -- click: start pavucontrol-qt
     awful.button({ }, 1, function()
-        assert(io.popen("/usr/bin/pavucontrol"))
+        awful.spawn.easy_async("/usr/bin/pavucontrol", function () end)
     end)
 ))

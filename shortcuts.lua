@@ -1,5 +1,24 @@
 local Cairo = require("lgi").cairo
-local math = require("math")
+local os = os
+local mouse = mouse
+local screen = screen
+local wibox = require('wibox')
+local table = table
+local keygrabber = keygrabber
+local math = require('math')
+local awful = require('awful')
+local gears = require("gears")
+local client = client
+awful.client = require('awful.client')
+local naughty = require("naughty")
+local string = string
+local tostring = tostring
+local tonumber = tonumber
+local debug = debug
+local pairs = pairs
+local unpack = unpack
+
+module("shortcuts")
 
 local settings = {
     hours = '#aa0000',
@@ -168,3 +187,5 @@ function grab_keys()
         awful.keygrabber.stop(grabber)
     end)
 end
+
+return {grab = grab_keys, settings = settings}

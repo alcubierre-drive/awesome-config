@@ -1,5 +1,26 @@
 local math = require("math")
 local os = os
+local mouse = mouse
+local screen = screen
+local wibox = require('wibox')
+local table = table
+local keygrabber = keygrabber
+local math = require('math')
+local awful = require('awful')
+local gears = require("gears")
+local timer = gears.timer
+local client = client
+awful.client = require('awful.client')
+local naughty = require("naughty")
+local string = string
+local tostring = tostring
+local tonumber = tonumber
+local debug = debug
+local pairs = pairs
+local unpack = unpack
+local setmetatable = setmetatable
+
+module("clock")
 
 local settings = {
     fg = { am = '#c3ff00', pm = '#ff6300' },
@@ -153,6 +174,9 @@ function ScreenClock:toggle()
     end
 end
 
+return {clock = ScreenClock}
+
+--[[
 -- reference implementation
 AllMyClocks = {}
 for s = 1,screen.count() do
@@ -167,4 +191,4 @@ gears.timer {
         end
     end
 }
-
+]]--
