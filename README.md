@@ -1,22 +1,7 @@
 # awesome-config
 My personal awesome-wm setup
 
-In order to use it, you need to edit the files
+The wallpapers that will be displayed should be located in `$HOME/Wallpapers/`
+The files / folders that are displayed *on* the wallpaper are `$HOME/Desktop/`
 
-    extensions/wallpaper.lua
-    rc.lua
-
-and fill the variables
-
-`extensions/wallpaper.lua`
-
-    wp_path
-    my_desktop
-
-`rc.lua`
-
-    extensiondir
-    themingdir
-
-with the desired content. The newest project, an *analogue clock around the 
-screen* can be found in `extensions/clock.lua`, where some settings can be made.
+To use the config properly, the module `awesome-switcher` needs to be included
