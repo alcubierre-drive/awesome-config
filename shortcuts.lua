@@ -186,9 +186,9 @@ function grab_keys()
                 preview_wbox.visible = false
                 --awful.spawn.easy_async(short, function () end)
                 if not extra == nil then
-                    awful.spawn.with_shell(short)
-                else
                     awful.spawn.with_shell(extra)
+                else
+                    awful.spawn.with_shell(short)
                 end
             end
         end
