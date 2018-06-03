@@ -212,11 +212,11 @@ mytasklist.buttons = awful.util.table.join(
 -- add wibox and clocks to each screen
 myclocks = {}
 for s = 1, screen.count() do
-    myclocks[s] = clock.clock:create(s,'hours')
     mypromptbox[s] = awful.widget.prompt()
     mytaglist[s] = awful.widget.taglist(s, awful.widget.taglist.filter.all, mytaglist.buttons)
     mytasklist[s] = awful.widget.tasklist(s, awful.widget.tasklist.filter.currenttags, mytasklist.buttons)
     mywibox[s] = awful.wibar({ position = "bottom", screen = s })
+    myclocks[s] = clock.clock:create(s,'hours')
     -- Widgets that are aligned to the left
     left_layout = wibox.layout.fixed.horizontal()
     left_layout:add(mytaglist[s])

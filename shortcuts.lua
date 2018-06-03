@@ -21,8 +21,8 @@ local unpack = unpack
 module("shortcuts")
 
 local settings = {
-    hours = '#aa0000',
-    minutes = '#aa0000',
+    hours = '#ff6300',
+    minutes = '#ff6300',
     seconds = '#000000',
     hours_width = 6,
     minutes_width = 4,
