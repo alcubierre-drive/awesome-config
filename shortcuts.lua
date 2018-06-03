@@ -34,16 +34,18 @@ local settings = {
     show_minutes = true,
     show_seconds = false,
     shortcuts = {
-        'firefox',
-        'xterm',
-        'spotify',
-        'thunderbird',
-        'inkscape',
-        'libreoffice',
-        'gimp',
-        'pcmanfm',
-        'chromium',
-        'virtualbox'
+        {'firefox', nil},
+        {'xterm', nil},
+        {'spotify', nil},
+        {'thunderbird', nil},
+        {'inkscape', nil},
+        {'libreoffice', nil},
+        --{'gimp', nil},
+        {'pcmanfm', nil},
+        {'chromium', nil},
+        {'virtualbox', nil},
+        {'garfield', 'exec ' .. os.getenv('HOME') .. '/.scripts/garfield' },
+        {'wallpaper', "echo 'wp_timer:emit_signal(\"timeout\")' | awesome-client"}
     },
     below_add = 0
 }
@@ -162,7 +164,7 @@ local function show_clock_face(settings)
     cr:set_font_size(20)
     cr:move_to(mywidth*(1/2+1/6),myheight*(1/2-1/6))
     for idx, short in pairs(settings.shortcuts) do
-        cr:show_text(short)
+        cr:show_text(short[1])
         cr:move_to(mywidth*(1/2+1/6),myheight*(1/2-1/6)+idx*(20+5))
     end
         --cr:fill()
@@ -177,10 +179,17 @@ function grab_keys()
         if event == 'release' then
             return
         end
-        for idx, short in pairs(settings.shortcuts) do
+        for idx, short_tab in pairs(settings.shortcuts) do
+            short = short_tab[1]
+            extra = short_tab[2]
             if key == short:sub(1,1) then
                 preview_wbox.visible = false
-                awful.spawn.easy_async(short, function () end)
+                --awful.spawn.easy_async(short, function () end)
+                if not extra == nil then
+                    awful.spawn.with_shell(short)
+                else
+                    awful.spawn.with_shell(extra)
+                end
             end
         end
         preview_wbox.visible = false
