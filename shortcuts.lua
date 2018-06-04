@@ -33,6 +33,10 @@ local settings = {
     show_hours = true,
     show_minutes = true,
     show_seconds = false,
+    -- the first element of the table is displayed (and its first char is used 
+    -- as the shortcut key), if the second element is not `nil`, a function is 
+    -- expected that will be run instead of the first element as 
+    -- `awful.spwan.easy_async()`.
     shortcuts = {
         {'firefox', nil},
         {'xterm', nil},
@@ -40,12 +44,17 @@ local settings = {
         {'thunderbird', nil},
         {'inkscape', nil},
         {'libreoffice', nil},
-        --{'gimp', nil},
+        {'e – gimp', function () awful.spawn.easy_async("gimp", function () end) end},
         {'pcmanfm', nil},
         {'chromium', nil},
         {'virtualbox', nil},
-        {'garfield', 'exec ' .. os.getenv('HOME') .. '/.scripts/garfield' },
-        {'wallpaper', "echo 'wp_timer:emit_signal(\"timeout\")' | awesome-client"}
+        {'garfield', function () awful.spawn.easy_async(
+            os.getenv('HOME') .. '/.scripts/garfield',
+            function () end
+            ) end },
+        {'wallpaper', function () awful.spawn.with_shell(
+            "echo 'wp_timer:emit_signal(\"timeout\")' | awesome-client")
+            end }
     },
     below_add = 0
 }
@@ -185,10 +194,10 @@ function grab_keys()
             if key == short:sub(1,1) then
                 preview_wbox.visible = false
                 --awful.spawn.easy_async(short, function () end)
-                if not extra == nil then
-                    awful.spawn.with_shell(extra)
+                if extra ~= nil then
+                    extra()
                 else
-                    awful.spawn.with_shell(short)
+                    awful.spawn.easy_async(short, function () end)
                 end
             end
         end
