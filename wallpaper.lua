@@ -9,9 +9,10 @@ wp_path = os.getenv("HOME") .. "/Wallpapers/"
 set_directories = true
 show_hidden_files = false
 wp_notification = true
-wp_timeout  = 3600*2.5
+wp_timeout  = 3600*5
+wp_per_screen_offset = {0,100}
 
-function apply_desktop_wallpaper(wp_file)
+function apply_desktop_wallpaper(wp_file, offset)
     -- declare variables
     local my_desktop = os.getenv("HOME") .. "/Desktop/"
     local my_fontsize = 14
@@ -20,6 +21,9 @@ function apply_desktop_wallpaper(wp_file)
     local font_border = 0.9
     local font_face = "DejaVu Sans Mono"
     local delta_move = 0.7
+    if offset == nil then
+        offset = 0
+    end
 
     -- define initial Cairo objects
     local surface = Cairo.ImageSurface.create_from_png(wp_file)
@@ -67,30 +71,30 @@ function apply_desktop_wallpaper(wp_file)
 
     -- draw the files
     -- dummy text for the extents, then draw the background rectangle
-    cr:move_to(my_fontsize,my_fontsize*2)
+    cr:move_to(offset+my_fontsize,my_fontsize*2)
     cr:text_path(my_files)
     local x1,y1 = cr:get_current_point()
     cr:new_path()
     cr:set_source_rgba(font_border,font_border,font_border,font_border_alpha)
-    cr:rectangle(my_fontsize*0.5,my_fontsize,x1,y1-my_fontsize*delta_move)
+    cr:rectangle(offset+my_fontsize*0.5,my_fontsize,x1-offset,y1-my_fontsize*delta_move)
     cr:fill()
     cr:set_source_rgb(font_color,font_color,font_color)
-    cr:move_to(my_fontsize,my_fontsize*2)
+    cr:move_to(offset+my_fontsize,my_fontsize*2)
     cr:text_path(my_files)
     cr:fill()
 
     -- draw the dirs
-    cr:move_to(my_fontsize,my_fontsize*(2+1.5))
+    cr:move_to(offset+my_fontsize,my_fontsize*(2+1.5))
     cr:text_path(my_dirs)
     local x1,y1 = cr:get_current_point()
     cr:new_path()
     cr:set_source_rgba(font_border,font_border,font_border,font_border_alpha)
     cr:rectangle(
-        my_fontsize*0.5,my_fontsize*(3.5-1),x1,y1-my_fontsize*(1.5+delta_move)
+        offset+my_fontsize*0.5,my_fontsize*(3.5-1),x1-offset,y1-my_fontsize*(1.5+delta_move)
     )
     cr:fill()
     cr:set_source_rgb(font_color,font_color,font_color)
-    cr:move_to(my_fontsize,my_fontsize*3.5)
+    cr:move_to(offset+my_fontsize,my_fontsize*3.5)
     cr:text_path(my_dirs)
     cr:fill()
 
@@ -131,14 +135,16 @@ wp_timer:connect_signal("timeout", function()
         )
     end
     -- optionally print folder contents
-    if set_directories == true then
-        -- returns a cairo surface
-        current_wp = apply_desktop_wallpaper(wp_path .. wp_files[wp_index])
-    else
-        -- just the filename of the .png
-        current_wp = wp_path .. wp_files[wp_index]
+    for s = 1, screen.count() do
+        if set_directories == true then
+            -- returns a cairo surface
+            current_wp = apply_desktop_wallpaper(wp_path .. wp_files[wp_index], wp_per_screen_offset[s])
+        else
+            -- just the filename of the .png
+            current_wp = wp_path .. wp_files[wp_index]
+        end
+        gears.wallpaper.maximized(current_wp, s)
     end
-    gears.wallpaper.maximized(current_wp)
 
     -- some timer settings for the changing
     wp_timer:stop()

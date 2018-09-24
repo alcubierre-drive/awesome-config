@@ -1,3 +1,5 @@
+-- TODO how about an awesome-wm lua-pam lockscreen that uses sth like this?
+
 local Cairo = require("lgi").cairo
 local os = os
 local mouse = mouse
@@ -23,16 +25,19 @@ module("shortcuts")
 local settings = {
     hours = '#ff6300',
     minutes = '#ff6300',
-    seconds = '#000000',
+    seconds = '#ff0000',
     hours_width = 6,
     minutes_width = 4,
     seconds_width = 2,
     hours_factor = 0.6,
     minutes_factor = 0.9,
     seconds_factor = 1.0,
+    update_interval = 0.5,
+    show_digital = true,
     show_hours = true,
     show_minutes = true,
-    show_seconds = false,
+    show_seconds = true,
+    show_shortcuts = true,
     -- the first element of the table is displayed (and its first char is used 
     -- as the shortcut key), if the second element is not `nil`, a function is 
     -- expected that will be run instead of the first element as 
@@ -47,14 +52,20 @@ local settings = {
         {'e – gimp', function () awful.spawn.easy_async("gimp", function () end) end},
         {'pcmanfm', nil},
         {'chromium', nil},
-        {'virtualbox', nil},
+        {'v – apply automatic dpi / xrandr', function () awful.spawn.easy_async(
+            os.getenv('HOME') .. '/.scripts/dpi.sh',
+            function () end
+            ) end },
         {'garfield', function () awful.spawn.easy_async(
             os.getenv('HOME') .. '/.scripts/garfield',
             function () end
             ) end },
         {'wallpaper', function () awful.spawn.with_shell(
             "echo 'wp_timer:emit_signal(\"timeout\")' | awesome-client")
-            end }
+            end },
+        {'kill services', function ()
+            awful.spawn.easy_async("killall telegram-desktop whatsie thunderbird caprine owncloud dropbox blueman-applet nm-applet applet.py")
+        end}
     },
     below_add = 0
 }
@@ -106,19 +117,9 @@ local function divide_length_add_delta (length, delta)
     return {first,second,third}
 end
 
-local function show_clock_face(settings)
+local function get_bgimg(settings)
     local mywidth = screen[mouse.screen].geometry.width
     local myheight = screen[mouse.screen].geometry.height
-    mybox = wibox {
-        ontop = true,
-        visible = true,
-        opacity = 0.6,
-        border_width = 0,
-        width = mywidth,
-        height = myheight,
-        x = 0,
-        y = 0,
-    }
     local surface = Cairo.ImageSurface(Cairo.Format.ARGB32,mywidth,myheight)
     local cr = Cairo.Context.create(surface)
     lengths_x = divide_length_add_delta(mywidth,4)
@@ -169,21 +170,57 @@ local function show_clock_face(settings)
         cr:stroke()
     end
 
-    cr:set_source_rgb(0,0,0)
-    cr:set_font_size(20)
-    cr:move_to(mywidth*(1/2+1/6),myheight*(1/2-1/6))
-    for idx, short in pairs(settings.shortcuts) do
-        cr:show_text(short[1])
-        cr:move_to(mywidth*(1/2+1/6),myheight*(1/2-1/6)+idx*(20+5))
+    if settings.show_shortcuts == true then
+        cr:set_source_rgb(0,0,0)
+        cr:set_font_size(20)
+        cr:move_to(mywidth*(1/2+1/6),myheight*(1/2-1/6))
+        for idx, short in pairs(settings.shortcuts) do
+            cr:show_text(short[1])
+            cr:move_to(mywidth*(1/2+1/6),myheight*(1/2-1/6)+idx*(20+5))
+        end
     end
-        --cr:fill()
 
-    mybox.bgimage = surface
+    if settings.show_digital == true then
+        cr:set_source_rgb(0,0,0)
+        cr:set_font_size(30)
+        cr:move_to(mywidth*(1/2-1/3),myheight*(1/2)-3)
+        cr:show_text(os.date("%H:%M:%S"))
+        cr:move_to(mywidth*(1/2-1/3),myheight*(1/2)+33)
+        cr:show_text(os.date("%A, %d. %B %Y"))
+    end
+
+    return surface
+end
+
+local function show_clock_face(settings)
+    local mywidth = screen[mouse.screen].geometry.width
+    local myheight = screen[mouse.screen].geometry.height
+    mybox = wibox {
+        ontop = true,
+        visible = true,
+        opacity = 0.6,
+        border_width = 0,
+        width = mywidth,
+        height = myheight,
+        screen = mouse.screen,
+        x = 0,
+        y = 0,
+    }
+
+    mybox.bgimage = get_bgimg(settings)
     return mybox
 end
 
 function grab_keys()
+    -- here we want some shortcuts.
     local preview_wbox = show_clock_face(settings)
+    local locktimer = gears.timer {
+            timeout = settings.update_interval,
+            autostart = true,
+            callback = function ()
+                preview_wbox.bgimage = get_bgimg(settings)
+            end
+        }
     grabber = awful.keygrabber.run(function(mod, key, event)
         if event == 'release' then
             return
@@ -202,6 +239,7 @@ function grab_keys()
             end
         end
         preview_wbox.visible = false
+        locktimer:stop()
         awful.keygrabber.stop(grabber)
     end)
 end
