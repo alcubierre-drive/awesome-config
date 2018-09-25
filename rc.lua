@@ -10,25 +10,19 @@ naughty = require("naughty")
 
 -- custom extensions
 menubar = require("mymenubar")
--- external module, also found on github
 -- switcher = require("awesome-switcher")
+-- external module, found on github.
 shortcuts = require("shortcuts")
 require("volume")
 cal = require("cal")
 clock = require("clock")
 
--- TODO set option that disables switcher by global variable, which then is 
--- turned true / false with alt-i? --> no taskbar, no switcher.
-
 menubar.show_categories = false
+menubar.cache_entries = true
 menubar.geometry = {height = 19}
 
 -- define extensions dir
 themingdir = "~/.config/awesome/standard/"
-
--- setup X: the script file needs to be linked to ~/.config/awesome/X_setup.sh
--- io.popen(extensiondir .. "X_setup.sh")
--- to use the laptop monitor, edit /etc/X11/xorg.conf.d/30-monitor.conf
 
 -- errors
 if awesome.startup_errors then
@@ -80,7 +74,8 @@ layouts = {
 tags = {}
 for s = 1, screen.count() do
     -- Each screen has its own tag table.
-    tags[s] = awful.tag({ 1, 2, 3, 4, 5, 6, 7, 8, 9 }, s, layouts[1])
+    tags[s] = awful.tag({ 1, 2, 3, 4, 5, 6, 7, 8, 9}, s, layouts[1])
+    -- TODO give tag names, maybe?
 end
 
 -- WIDGETS
@@ -100,6 +95,12 @@ cpuwidget:set_color( {
     to = { 15,0 },
     stops = beautiful.widget_colors['cpu']
 } )
+-- start htop upon click
+cpuwidget:buttons(awful.util.table.join(
+    awful.button({ }, 1, function()
+        awful.spawn.easy_async("xterm -e htop", function () end)
+    end)
+))
 --mensa = require('extensions/mensa') -- mensa @ cpu
 --mensa.register(cpuwidget)
 vicious.register(cpuwidget, vicious.widgets.cpu, "$1", 2)
@@ -112,6 +113,12 @@ memwidget:set_color( {
     to = { 15,0 },
     stops = beautiful.widget_colors['mem']
 } )
+-- start htop upon click
+memwidget:buttons(awful.util.table.join(
+    awful.button({ }, 1, function()
+        awful.spawn.easy_async("xterm -e htop", function () end)
+    end)
+))
 vicious.register(memwidget, vicious.widgets.mem, "$1", 2)
 -- thermal
 thermalwidget = wibox.widget.textbox()
@@ -418,7 +425,7 @@ globalkeys = awful.util.table.join(
     awful.key({ modkey },            "e",     function () io.popen(
         'networkmanager_dmenu -nb "#222222" -nf "#0088dd" -sb "#00aaff" -sf "#333333" -fn "Droid Sans Mono-10" -p net'
         ) end),
-    awful.key({},                    "Print", function () io.popen("import ~/Desktop/Screenshot.png") end),
+    awful.key({},                    "Print", function () io.popen("bash -c 'import ~/Desktop/$(date +\"%s\").png'") end),
     -- Menubar
     awful.key({ modkey }, "p", function() menubar.show() end),
     -- toggle clock around the screen
@@ -428,7 +435,8 @@ globalkeys = awful.util.table.join(
         end
     end),
     -- Launchers
-    awful.key({ modkey }, "g", shortcuts.grab)
+    awful.key({ modkey }, "g", shortcuts.grab),
+    awful.key({ modkey, "Shift" }, "g", shortcuts.lock)
 )
 clientkeys = awful.util.table.join(
     awful.key({ modkey,           }, "f",      function (c) c.fullscreen = not c.fullscreen  end),
@@ -535,7 +543,7 @@ client.connect_signal("manage", function (c, startup)
             client.focus = c
         end
     end)
-    awful.client.movetoscreen(c, awful.screen.focused())
+    c:move_to_screen(awful.screen.focused())
     if not startup then
         if not c.size_hints.user_position and not c.size_hints.program_position then
             awful.placement.no_overlap(c)
@@ -572,21 +580,20 @@ function run_once(cmd)
         -- avoid pgrep throwing warnings.
         findme = findme:sub(0,15)
     end
-    awful.spawn.with_shell("bash -c 'pgrep -u $USER -x " .. findme .. " > /dev/null || (" .. cmd[1] .. ")'")
+    awful.spawn.with_shell("bash -c 'pgrep -u $USER -x " .. findme .. " > /dev/null || (" .. cmd[1] .. ")'", function () end)
 end
 
 commands = {
     {"nm-applet", nil},
     {"blueman-applet", nil},
-    {"thunderbird", nil},
-    {"dropbox", nil},
+    {"alltray thunderbird", "thunderbird"},
     {"owncloud", nil},
     -- " -startintray"
     {"telegram-desktop", nil},
     -- " --minimize"
-    {"caprine", nil},
+    --{"caprine", nil},
     {"whatsie", nil},
-    {"system-config-printer-applet", "applet.py"},
+    {"system-config-printer-applet", "applet.py"}
 }
 
 for i = 1, #commands do

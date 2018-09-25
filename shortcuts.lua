@@ -244,4 +244,23 @@ function grab_keys()
     end)
 end
 
-return {grab = grab_keys, settings = settings}
+function lock()
+    local show_shorts = settings.show_shortcuts
+    settings.show_shortcuts = false
+    local preview_wbox = show_clock_face(settings)
+    local locktimer = gears.timer {
+            timeout = settings.update_interval,
+            autostart = true,
+            callback = function ()
+                preview_wbox.bgimage = get_bgimg(settings)
+            end
+        }
+        -- TODO: Get that thing to work with autosuspend.
+    awful.spawn.easy_async('bash -c "sleep 0.1; xtrlock-pam -s"', function (stdout, stderr, reason, exit_code)
+        locktimer:stop()
+        preview_wbox.visible = false
+        settings.show_shortcuts = show_shorts
+    end)
+end
+
+return {grab = grab_keys, settings = settings, lock = lock}
