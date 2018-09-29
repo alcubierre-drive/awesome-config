@@ -19,6 +19,7 @@ local tonumber = tonumber
 local debug = debug
 local pairs = pairs
 local unpack = unpack
+local mousegrabber = mousegrabber
 
 module("shortcuts")
 
@@ -26,6 +27,8 @@ local settings = {
     hours = '#ff6300',
     minutes = '#ff6300',
     seconds = '#ff0000',
+    bg = {1,1,1,0.8},
+    widget_opacity = 0.6,
     hours_width = 6,
     minutes_width = 4,
     seconds_width = 2,
@@ -37,7 +40,6 @@ local settings = {
     show_hours = true,
     show_minutes = true,
     show_seconds = true,
-    show_shortcuts = true,
     -- the first element of the table is displayed (and its first char is used 
     -- as the shortcut key), if the second element is not `nil`, a function is 
     -- expected that will be run instead of the first element as 
@@ -117,16 +119,26 @@ local function divide_length_add_delta (length, delta)
     return {first,second,third}
 end
 
-local function get_bgimg(settings)
-    local mywidth = screen[mouse.screen].geometry.width
-    local myheight = screen[mouse.screen].geometry.height
+local function get_bgimg(settings, show_shortcuts, myscreen)
+    local usescreen = myscreen
+    if myscreen == nil then
+        usescreen = screen[mouse.screen]
+    end
+    local mywidth = usescreen.geometry.width
+    local myheight = usescreen.geometry.height
+
     local surface = Cairo.ImageSurface(Cairo.Format.ARGB32,mywidth,myheight)
     local cr = Cairo.Context.create(surface)
+
     lengths_x = divide_length_add_delta(mywidth,4)
     lengths_y = divide_length_add_delta(myheight,4)
-    cr:set_source_rgb(1,1,1)
+
+    -- background
+    cr:set_source_rgba(settings.bg[1],settings.bg[2],settings.bg[3],settings.bg[4])
     cr:rectangle(0,0,mywidth,myheight)
     cr:fill()
+
+    -- clock hour strokes
     cr:set_source_rgb(0,0,0)
     for j=1,3 do
         cr:rectangle(lengths_x[j],0,8,20)
@@ -142,7 +154,9 @@ local function get_bgimg(settings)
     cr:rectangle(mywidth/2-5,myheight/2-5,10,10)
     cr:fill()
 
+    -- paint the clock (hours, minutes, seconds)
     local hours, minutes, seconds = get_coordinates(mywidth, myheight)
+
     if settings.show_hours == true then
         cr:move_to(mywidth/2,myheight/2)
         cr:set_line_width(settings.hours_width)
@@ -170,7 +184,9 @@ local function get_bgimg(settings)
         cr:stroke()
     end
 
-    if settings.show_shortcuts == true then
+    -- paint the shortcuts info
+    -- TODO add red first letter.
+    if show_shortcuts == true then
         cr:set_source_rgb(0,0,0)
         cr:set_font_size(20)
         cr:move_to(mywidth*(1/2+1/6),myheight*(1/2-1/6))
@@ -180,45 +196,81 @@ local function get_bgimg(settings)
         end
     end
 
+    -- paint the digital clock
     if settings.show_digital == true then
         cr:set_source_rgb(0,0,0)
         cr:set_font_size(30)
         cr:move_to(mywidth*(1/2-1/3),myheight*(1/2)-3)
         cr:show_text(os.date("%H:%M:%S"))
         cr:move_to(mywidth*(1/2-1/3),myheight*(1/2)+33)
-        cr:show_text(os.date("%A, %d. %B %Y"))
+        local mycurrentdate = os.date("%A, %d. %B %Y")
+        cr:show_text(mycurrentdate)
+        if show_shortcuts == false then
+            -- show choice about password / fingerprint authentification.
+            local dateextent = cr:text_extents(mycurrentdate)
+            local blue = {0,0.54,1}
+            local red = {1,0.39,0}
+            cr:set_font_size(15)
+
+            local passwdextent = cr:text_extents("Password")
+            cr:set_source_rgb(blue[1],blue[2],blue[3])
+            cr:move_to( mywidth*(1/2-1/3)+dateextent.width-passwdextent.width,
+                myheight*(1/2)-18)
+            cr:show_text("Password")
+            cr:set_source_rgb(red[1],red[2],red[3])
+            cr:move_to( mywidth*(1/2-1/3)+dateextent.width-passwdextent.width,
+                myheight*(1/2)-18)
+            cr:show_text("P")
+
+            local fprintextent = cr:text_extents("Fingerprint")
+            cr:set_source_rgb(blue[1],blue[2],blue[3])
+            cr:move_to( mywidth*(1/2-1/3)+dateextent.width-fprintextent.width,
+                myheight*(1/2)-3)
+            cr:show_text("Fingerprint")
+            cr:set_source_rgb(red[1],red[2],red[3])
+            cr:move_to( mywidth*(1/2-1/3)+dateextent.width-fprintextent.width,
+                myheight*(1/2)-3 )
+            cr:show_text("F")
+        end
     end
 
     return surface
 end
 
-local function show_clock_face(settings)
-    local mywidth = screen[mouse.screen].geometry.width
-    local myheight = screen[mouse.screen].geometry.height
+-- wrapper to show the clock; not the lock.
+local function show_clock_face(settings, show_shortcuts, myscreen)
+    local usescreen = myscreen
+    if myscreen == nil then
+        usescreen = screen[mouse.screen]
+    end
+
+    local mywidth = usescreen.geometry.width
+    local myheight = usescreen.geometry.height
     mybox = wibox {
         ontop = true,
         visible = true,
-        opacity = 0.6,
+        opacity = settings.widget_opacity,
         border_width = 0,
         width = mywidth,
         height = myheight,
-        screen = mouse.screen,
+        screen = usescreen,
         x = 0,
         y = 0,
     }
 
-    mybox.bgimage = get_bgimg(settings)
+    mybox.bgimage = get_bgimg(settings, show_shortcuts, usescreen)
     return mybox
 end
 
+-- grab the keys for shortcuts
 function grab_keys()
     -- here we want some shortcuts.
-    local preview_wbox = show_clock_face(settings)
+    local preview_wbox = show_clock_face(settings, true, nil)
     local locktimer = gears.timer {
             timeout = settings.update_interval,
             autostart = true,
             callback = function ()
-                preview_wbox.bgimage = get_bgimg(settings)
+                preview_wbox.bgimage = get_bgimg(settings, true, nil)
             end
         }
     grabber = awful.keygrabber.run(function(mod, key, event)
@@ -244,22 +296,72 @@ function grab_keys()
     end)
 end
 
+-- lockscreen
 function lock()
-    local show_shorts = settings.show_shortcuts
-    settings.show_shortcuts = false
-    local preview_wbox = show_clock_face(settings)
+    local preview_wboxes = {}
+    for s = 1,screen.count() do
+        preview_wboxes[s] = show_clock_face(settings, false, screen[s])
+    end
+
+    function edit_wboxes(visible)
+        if visible == true then
+            for s = 1, screen.count() do
+                preview_wboxes[s].bgimage = get_bgimg(settings, false, screen[s])
+            end
+        else
+            for s = 1, screen.count() do
+                preview_wboxes[s].visible = false
+            end
+        end
+    end
+
     local locktimer = gears.timer {
             timeout = settings.update_interval,
             autostart = true,
             callback = function ()
-                preview_wbox.bgimage = get_bgimg(settings)
+                edit_wboxes(true)
             end
         }
-        -- TODO: Get that thing to work with autosuspend.
-    awful.spawn.easy_async('bash -c "sleep 0.1; xtrlock-pam -s"', function (stdout, stderr, reason, exit_code)
-        locktimer:stop()
-        preview_wbox.visible = false
-        settings.show_shortcuts = show_shorts
+
+    function makeauth(fprintauth)
+        awful.keygrabber.stop(grabber)
+        mousegrabber.stop()
+        if fprintauth == true then
+            awful.spawn.easy_async('xtrlock-pam', function (stdout, stderr, reason, exit_code)
+                locktimer:stop()
+                edit_wboxes(false)
+                naughty.resume()
+            end)
+        else
+            awful.spawn.easy_async('xtrlock-pam -f', function (stdout, stderr, reason, exit_code)
+                locktimer:stop()
+                edit_wboxes(false)
+                naughty.resume()
+            end)
+        end
+    end
+
+    naughty.suspend()
+
+    mousegrabber.run(
+        function(mouse)
+            return true
+        end,
+        "dot")
+
+    grabber = awful.keygrabber.run(function(mod, key, event)
+        if event == 'release' then
+            return
+        end
+        if key == 'p' then
+            makeauth(false)
+        end
+        if key == 'f' then
+            makeauth(true)
+        end
+        if key == 'Return' then
+            makeauth(false)
+        end
     end)
 end
 
