@@ -1,8 +1,9 @@
 local wibox = require("wibox")
 local awful = require("awful")
+local beautiful = beautiful
 
 volume_widget = wibox.widget.textbox()
-volume_widget:set_align("right")
+--volume_widget:set_align("right")
 
 notification = false
 
@@ -42,12 +43,13 @@ function update_volume(widget)
             notification = true
         end
       else
-         volume = "<span> ♪ " .. my_volume .. " </span>"
+         volume = "<span > ♪ " .. my_volume .. " </span>"
          notification = false
       end
    end
    -- volume = " vol: " .. volume .. " "
-   widget:set_markup(volume)
+   widget.markup = volume
+   widget.font = beautiful.font
 end
 
 update_volume(volume_widget)

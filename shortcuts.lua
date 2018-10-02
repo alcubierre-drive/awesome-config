@@ -20,6 +20,7 @@ local debug = debug
 local pairs = pairs
 local unpack = unpack
 local mousegrabber = mousegrabber
+-- local pam = require("pam")
 
 module("shortcuts")
 
@@ -237,6 +238,115 @@ local function get_bgimg(settings, show_shortcuts, myscreen)
     return surface
 end
 
+function get_auth_img(settings, fprint, myscreen)
+    local usescreen = myscreen
+    if myscreen == nil then
+        usescreen = screen[mouse.screen]
+    end
+    local mywidth = usescreen.geometry.width
+    local myheight = usescreen.geometry.height
+
+    local surface = Cairo.ImageSurface(Cairo.Format.ARGB32,mywidth,myheight)
+    local cr = Cairo.Context.create(surface)
+
+    lengths_x = divide_length_add_delta(mywidth,4)
+    lengths_y = divide_length_add_delta(myheight,4)
+
+    -- background
+    cr:set_source_rgba(settings.bg[1],settings.bg[2],settings.bg[3],settings.bg[4])
+    cr:rectangle(0,0,mywidth,myheight)
+    cr:fill()
+
+    -- clock hour strokes
+    cr:set_source_rgb(0,0,0)
+    for j=1,3 do
+        cr:rectangle(lengths_x[j],0,8,20)
+        cr:fill()
+        cr:rectangle(lengths_x[j],myheight-(20+settings.below_add),8,
+            20+settings.below_add)
+        cr:fill()
+        cr:rectangle(0,lengths_y[j],20,8)
+        cr:fill()
+        cr:rectangle(mywidth-20,lengths_y[j],20,8)
+        cr:fill()
+    end
+    cr:rectangle(mywidth/2-5,myheight/2-5,10,10)
+    cr:fill()
+
+    -- paint the clock (hours, minutes, seconds)
+    local hours, minutes, seconds = get_coordinates(mywidth, myheight)
+
+    if settings.show_hours == true then
+        cr:move_to(mywidth/2,myheight/2)
+        cr:set_line_width(settings.hours_width)
+        cr:set_source_rgb(gears.color.parse_color(settings.hours))
+        cr:line_to(change_with_difference({mywidth/2,myheight/2},hours,
+            settings.hours_factor))
+        cr:stroke()
+    end
+
+    if settings.show_minutes == true then
+        cr:move_to(mywidth/2,myheight/2)
+        cr:set_line_width(settings.minutes_width)
+        cr:set_source_rgb(gears.color.parse_color(settings.minutes))
+        cr:line_to(change_with_difference({mywidth/2,myheight/2},minutes,
+            settings.minutes_factor))
+        cr:stroke()
+    end
+
+    if settings.show_seconds == true then
+        cr:move_to(mywidth/2,myheight/2)
+        cr:set_line_width(settings.seconds_width)
+        cr:set_source_rgb(gears.color.parse_color(settings.seconds))
+        cr:line_to(change_with_difference({mywidth/2,myheight/2},seconds,
+            settings.seconds_factor))
+        cr:stroke()
+    end
+
+    -- paint the digital clock
+    if settings.show_digital == true then
+        cr:set_source_rgb(0,0,0)
+        cr:set_font_size(30)
+        cr:move_to(mywidth*(1/2-1/3),myheight*(1/2)-3)
+        cr:show_text(os.date("%H:%M:%S"))
+        cr:move_to(mywidth*(1/2-1/3),myheight*(1/2)+33)
+        local mycurrentdate = os.date("%A, %d. %B %Y")
+        cr:show_text(mycurrentdate)
+
+        local dateextent = cr:text_extents(mycurrentdate)
+        local blue = {0,0.54,1}
+        local red = {1,0.39,0}
+        cr:set_font_size(15)
+
+        if fprint then
+            local fprintextent = cr:text_extents("Fingerprint")
+            local textextent = cr:text_extents("scan fingerprint")
+            cr:set_source_rgb(blue[1],blue[2],blue[3])
+            cr:move_to( mywidth*(1/2-1/3)+dateextent.width-fprintextent.width,
+                myheight*(1/2)-3)
+            cr:show_text("Fingerprint")
+            cr:set_source_rgb(red[1],red[2],red[3])
+            cr:move_to( mywidth*(1/2-1/3)+dateextent.width-textextent.width,
+                myheight*(1/2)-18 )
+            cr:show_text("scan fingerprint")
+        else
+            local passwdextent = cr:text_extents("Password")
+            local textextent = cr:text_extents("type password")
+            cr:set_source_rgb(blue[1],blue[2],blue[3])
+            cr:move_to( mywidth*(1/2-1/3)+dateextent.width-passwdextent.width,
+                myheight*(1/2)-18)
+            cr:show_text("Password")
+            cr:set_source_rgb(red[1],red[2],red[3])
+            cr:move_to( mywidth*(1/2-1/3)+dateextent.width-textextent.width,
+                myheight*(1/2)-3)
+            cr:show_text("type password")
+        end
+
+    end
+
+    return surface
+end
+
 -- wrapper to show the clock; not the lock.
 local function show_clock_face(settings, show_shortcuts, myscreen)
     local usescreen = myscreen
@@ -296,6 +406,29 @@ function grab_keys()
     end)
 end
 
+-- pam wrapper function
+function authenticate_with_module_user(pam_module,user,conversation)
+    local h, err = pam.start(pam_module, user, {conversation, nil})
+    if not h then
+        return "Start error:" .. err
+    end
+
+    local a, err = pam.authenticate(h)
+    if not a then
+        return "Authenticate error:" .. err
+    end
+
+    local e, err = pam.endx(h, pam.SUCCESS)
+    if not e then
+        return "End error:" .. err
+    end
+
+    if a then
+        return true
+    else
+        return false
+    end
+end
 -- lockscreen
 function lock()
     local preview_wboxes = {}
@@ -303,10 +436,22 @@ function lock()
         preview_wboxes[s] = show_clock_face(settings, false, screen[s])
     end
 
-    function edit_wboxes(visible)
+    function edit_wboxes(visible, auth)
         if visible == true then
-            for s = 1, screen.count() do
-                preview_wboxes[s].bgimage = get_bgimg(settings, false, screen[s])
+            if auth == "fp" then
+                for s = 1, screen.count() do
+                    preview_wboxes[s].bgimage = get_auth_img(settings, true, screen[s])
+                end
+            else
+                if auth == "pw" then
+                    for s = 1, screen.count() do
+                        preview_wboxes[s].bgimage = get_auth_img(settings, false, screen[s])
+                    end
+                else
+                    for s = 1, screen.count() do
+                        preview_wboxes[s].bgimage = get_bgimg(settings, false, screen[s])
+                    end
+                end
             end
         else
             for s = 1, screen.count() do
@@ -319,35 +464,110 @@ function lock()
             timeout = settings.update_interval,
             autostart = true,
             callback = function ()
-                edit_wboxes(true)
+                edit_wboxes(true, false)
             end
         }
 
+    local fptimer = gears.timer {
+            timeout = settings.update_interval,
+            autostart = false,
+            callback = function ()
+                edit_wboxes(true, "fp")
+            end
+        }
+
+    local pwtimer = gears.timer {
+            timeout = settings.update_interval,
+            autostart = false,
+            callback = function ()
+                edit_wboxes(true, "pw")
+            end
+        }
+
+    function pam_conversation(messages)
+        local responses = {}
+        for i, message in ipairs(messages) do
+            local msg_style, msg = message[1], message[2]
+
+            if msg_style == pam.PROMPT_ECHO_OFF then
+                -- keygrabber password!
+                local password = ""
+                passwordgrabber = awful.keygrabber.run(function(mod, key, event)
+                        if event == 'release' then
+                            return
+                        end
+                        if key == "Return" then
+                            awful.keygrabber.stop(passwordgrabber)
+                        else
+                            password = password .. key
+                        end
+                        return true
+                end)
+                naughty.notify({text = password, title="YO"})
+                responses[i] = {password, 0}
+            elseif msg_style == pam.PROMPT_ECHO_ON then
+                -- Assume PAM asks us for the username
+                io.write(msg)
+                responses[i] = {"ThisUserDoesNotExist", 0}
+            elseif msg_style == pam.ERROR_MSG then
+                io.write("ERROR: ")
+                io.write(msg)
+                io.write("\n")
+                responses[i] = {"", 0}
+            elseif msg_style == pam.TEXT_INFO then
+                io.write(msg)
+                io.write("\n")
+                responses[i] = {"", 0}
+            else
+                error("PAM: Unsupported conversation message style: " .. msg_style)
+            end
+        end
+        return responses
+    end
+
     function makeauth(fprintauth)
-        awful.keygrabber.stop(grabber)
-        mousegrabber.stop()
         if fprintauth == true then
-            awful.spawn.easy_async('xtrlock-pam', function (stdout, stderr, reason, exit_code)
-                locktimer:stop()
+            locktimer:stop()
+            edit_wboxes(true,"fp")
+            fptimer:start()
+            awful.keygrabber.stop(grabber)
+            if authenticate_with_module_user("xtrlock-pam-auth",os.getenv("USER"),pam_conversation) then
+                mousegrabber.stop()
+                fptimer:stop()
                 edit_wboxes(false)
                 naughty.resume()
-            end)
+            else
+                -- error handling
+                fptimer:stop()
+                edit_wboxes(false)
+                lock()
+            end
         else
-            awful.spawn.easy_async('xtrlock-pam -f', function (stdout, stderr, reason, exit_code)
-                locktimer:stop()
+            locktimer:stop()
+            pwtimer:start()
+            awful.keygrabber.stop(grabber)
+            if authenticate_with_module_user("system-local-login",os.getenv("USER"),pam_conversation) then
+                mousegrabber.stop()
+                pwtimer:stop()
                 edit_wboxes(false)
                 naughty.resume()
-            end)
+            else
+                -- error handling
+                pwtimer:stop()
+                edit_wboxes(false)
+                lock()
+            end
         end
     end
 
     naughty.suspend()
 
-    mousegrabber.run(
-        function(mouse)
-            return true
-        end,
-        "dot")
+    if mousegrabber.isrunning() == false then
+        mousegrabber.run(
+            function(mouse)
+                return true
+            end, "dot")
+    end
 
     grabber = awful.keygrabber.run(function(mod, key, event)
         if event == 'release' then
@@ -358,9 +578,6 @@ function lock()
         end
         if key == 'f' then
             makeauth(true)
-        end
-        if key == 'Return' then
-            makeauth(false)
         end
     end)
 end

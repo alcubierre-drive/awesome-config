@@ -167,6 +167,24 @@ vicious.register(batwidget, vicious.widgets.bat,
     10, 'BAT0')
 -- keyboard layout
 kbdwidget = awful.widget.keyboardlayout:new()
+-- ip addr widget
+local socket = require("socket")
+local function get_ipaddr()
+    local myip = socket.dns.toip(socket.dns.gethostname())
+    local markup = '<span color="#00ff00">'
+    if myip:sub(1,8) == '127.0.0.' then
+        markup = '<span color="#ff0000">'
+    end
+    return markup .. '&#9041; ' .. myip .. '  </span>'
+end
+ipwidget = wibox.widget.textbox( get_ipaddr() )
+iptimer = gears.timer {
+    timeout = 2,
+    autostart = true,
+    callback = function()
+        ipwidget.markup = get_ipaddr()
+    end }
+
 -- Create a wibox for each screen and add it
 mywibox = {}
 mypromptbox = {}
@@ -230,6 +248,7 @@ for s = 1, screen.count() do
     left_layout:add(mypromptbox[s])
     right_layout = wibox.layout.fixed.horizontal()
     --right_layout:add(volume_widget)
+    right_layout:add(ipwidget)
     right_layout:add(batwidget)
     right_layout:add(thermalwidget)
     right_layout:add(volume_widget)
@@ -435,8 +454,8 @@ globalkeys = awful.util.table.join(
         end
     end),
     -- Launchers
-    awful.key({ modkey }, "g", shortcuts.grab),
-    awful.key({ modkey, "Shift" }, "g", shortcuts.lock)
+    awful.key({ modkey }, "g", shortcuts.grab)
+    --awful.key({ modkey, "Shift" }, "g", shortcuts.lock)
 )
 clientkeys = awful.util.table.join(
     awful.key({ modkey,           }, "f",      function (c) c.fullscreen = not c.fullscreen  end),
@@ -592,11 +611,10 @@ commands = {
     {"telegram-desktop", nil},
     -- " --minimize"
     --{"caprine", nil},
-    {"whatsie", nil},
+    --{"whatsie", nil},
     {"system-config-printer-applet", "applet.py"}
 }
 
 for i = 1, #commands do
     run_once(commands[i])
 end
-
