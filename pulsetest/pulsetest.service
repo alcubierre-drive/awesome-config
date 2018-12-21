@@ -1,0 +1,12 @@
+[Unit]
+Description=store pulseaudio volume in cache file.
+After=pulseaudio.service
+Requires=pulseaudio.service
+
+[Service]
+TimeoutStartSec=20
+ExecStart=/usr/local/bin/pulsetest
+ExecStop=killall pulsetest
+
+[Install]
+WantedBy=default.target
