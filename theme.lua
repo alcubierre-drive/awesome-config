@@ -26,8 +26,8 @@ theme.menu_bg_focus = "#00AAFF"
 theme.menu_fg_normal = "#0088dd"
 theme.menu_bg_normal = "#222222"
 --
-theme.taglist_squares_sel   = "~/.config/awesome/standard/taglist/full.png"
-theme.taglist_squares_unsel = "~/.config/awesome/standard/taglist/empt.png"
+theme.taglist_squares_sel   = "~/.config/awesome/theme_taglist_full.png"
+theme.taglist_squares_unsel = "~/.config/awesome/theme_taglist_empt.png"
 
 theme.taglist_squares       = "true"
 theme.titlebar_close_button = "true"

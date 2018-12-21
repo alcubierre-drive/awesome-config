@@ -17,11 +17,6 @@
 -- @author Alexander Yakushev &lt;yakushev.alex@gmail.com&gt;
 -- @copyright 2011-2012 Alexander Yakushev
 -- @module menubar
-
-
--- only some small changes, e.g. the text that is displayed when the menubar is 
--- run.
-
 ---------------------------------------------------------------------------
 
 -- Grab environment we need

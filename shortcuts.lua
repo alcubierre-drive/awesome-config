@@ -1,4 +1,5 @@
 -- TODO how about an awesome-wm lua-pam lockscreen that uses sth like this?
+-- TODO does not correctly identify the current screen. Why?
 
 local Cairo = require("lgi").cairo
 local os = os
@@ -20,7 +21,6 @@ local debug = debug
 local pairs = pairs
 local unpack = unpack
 local mousegrabber = mousegrabber
--- local pam = require("pam")
 
 module("shortcuts")
 
@@ -67,7 +67,7 @@ local settings = {
             "echo 'wp_timer:emit_signal(\"timeout\")' | awesome-client")
             end },
         {'kill services', function ()
-            awful.spawn.easy_async("killall telegram-desktop whatsie thunderbird caprine owncloud dropbox blueman-applet nm-applet applet.py")
+            awful.spawn.easy_async("killall telegram-deskto whatsie thunderbird caprine owncloud dropbox blueman-applet nm-applet applet.py", function () end)
         end}
     },
     below_add = 0
@@ -406,29 +406,6 @@ function grab_keys()
     end)
 end
 
--- pam wrapper function
-function authenticate_with_module_user(pam_module,user,conversation)
-    local h, err = pam.start(pam_module, user, {conversation, nil})
-    if not h then
-        return "Start error:" .. err
-    end
-
-    local a, err = pam.authenticate(h)
-    if not a then
-        return "Authenticate error:" .. err
-    end
-
-    local e, err = pam.endx(h, pam.SUCCESS)
-    if not e then
-        return "End error:" .. err
-    end
-
-    if a then
-        return true
-    else
-        return false
-    end
-end
 -- lockscreen
 function lock()
     local preview_wboxes = {}
@@ -484,89 +461,38 @@ function lock()
             end
         }
 
-    function pam_conversation(messages)
-        local responses = {}
-        for i, message in ipairs(messages) do
-            local msg_style, msg = message[1], message[2]
-
-            if msg_style == pam.PROMPT_ECHO_OFF then
-                -- keygrabber password!
-                local password = ""
-                passwordgrabber = awful.keygrabber.run(function(mod, key, event)
-                        if event == 'release' then
-                            return
-                        end
-                        if key == "Return" then
-                            awful.keygrabber.stop(passwordgrabber)
-                        else
-                            password = password .. key
-                        end
-                        return true
-                end)
-                naughty.notify({text = password, title="YO"})
-                responses[i] = {password, 0}
-            elseif msg_style == pam.PROMPT_ECHO_ON then
-                -- Assume PAM asks us for the username
-                io.write(msg)
-                responses[i] = {"ThisUserDoesNotExist", 0}
-            elseif msg_style == pam.ERROR_MSG then
-                io.write("ERROR: ")
-                io.write(msg)
-                io.write("\n")
-                responses[i] = {"", 0}
-            elseif msg_style == pam.TEXT_INFO then
-                io.write(msg)
-                io.write("\n")
-                responses[i] = {"", 0}
-            else
-                error("PAM: Unsupported conversation message style: " .. msg_style)
-            end
-        end
-        return responses
-    end
-
     function makeauth(fprintauth)
+        awful.keygrabber.stop(grabber)
+        mousegrabber.stop()
         if fprintauth == true then
             locktimer:stop()
-            edit_wboxes(true,"fp")
             fptimer:start()
-            awful.keygrabber.stop(grabber)
-            if authenticate_with_module_user("xtrlock-pam-auth",os.getenv("USER"),pam_conversation) then
-                mousegrabber.stop()
+            awful.spawn.easy_async('xtrlock-pam', function (stdout, stderr, reason, exit_code)
                 fptimer:stop()
                 edit_wboxes(false)
                 naughty.resume()
-            else
-                -- error handling
-                fptimer:stop()
-                edit_wboxes(false)
-                lock()
-            end
+            end)
         else
             locktimer:stop()
             pwtimer:start()
-            awful.keygrabber.stop(grabber)
-            if authenticate_with_module_user("system-local-login",os.getenv("USER"),pam_conversation) then
-                mousegrabber.stop()
+            awful.spawn.easy_async('xtrlock-pam -f', function (stdout, stderr, reason, exit_code)
                 pwtimer:stop()
                 edit_wboxes(false)
                 naughty.resume()
-            else
-                -- error handling
-                pwtimer:stop()
-                edit_wboxes(false)
-                lock()
-            end
+            end)
         end
     end
 
     naughty.suspend()
 
-    if mousegrabber.isrunning() == false then
+    if mousegrabber.isrunning() then
+        print("Mousegrabber already running.")
+    else
         mousegrabber.run(
-            function(mouse)
-                return true
-            end, "dot")
+        function(mouse)
+            return true
+        end,
+        "dot")
     end
 
     grabber = awful.keygrabber.run(function(mod, key, event)
@@ -578,6 +504,9 @@ function lock()
         end
         if key == 'f' then
             makeauth(true)
+        end
+        if key == 'Return' then
+            makeauth(false)
         end
     end)
 end
