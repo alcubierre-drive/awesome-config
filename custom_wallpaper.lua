@@ -1,3 +1,4 @@
+-- TODO switch to gears.gfs
 local lfs = require("lfs")
 local math = require("math")
 local gears = require("gears")
@@ -25,6 +26,7 @@ local settings = {
     show_files = true,
     show_hidden = false,
     show_fontsize = 14,
+    offset = 5,
     show_path = os.getenv("HOME") .. "/Desktop/"
 }
 
@@ -295,7 +297,7 @@ function CustomWallpaper:set( s )
     cr_im:translate((scaled_width - w) / 2, (scaled_height - h) / 2)
 
     add_desktop_files( cr_im, desktop_configuration,
-        -(scaled_width - w) , -(scaled_height - h) )
+        -(scaled_width - w) + self.settings.offset , -(scaled_height - h) )
     gears.wallpaper.maximized( imsurf, s, false, false )
 end
 
@@ -314,6 +316,10 @@ function CustomWallpaper:set_timer()
             return true
         end }
     return t
+end
+
+function CustomWallpaper:update_files()
+    self.files = get_wp_files( settings.path )
 end
 
 return { mod = CustomWallpaper }

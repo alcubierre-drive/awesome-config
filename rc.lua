@@ -7,12 +7,11 @@ local wibox = require("wibox")
 -- Theme handling library
 beautiful = require("beautiful")
 beautiful.init( "~/.config/awesome/theme.lua")
--- Notification library
-local naughty = require("naughty")
+-- Notification library (global because of awesome-client)
+naughty = require("naughty")
 
 local os = require("os")
 
--- enable alt-tab style switching. from github
 -- local switcher = require("awesome-switcher")
 local menubar = require("mymenubar")
 local shortcuts = require("shortcuts")
@@ -39,8 +38,6 @@ do
 end
 -- }}}
 
--- commands that are automatically started at awesomewm startup. the second
--- value is the string to search for in pgrep in order to only start a cmd once
 local autostart_commands = {
     {"nm-applet", nil},
     {"blueman-applet", nil},
@@ -52,7 +49,6 @@ local autostart_commands = {
     {"system-config-printer-applet", "applet.py"}
 }
 
--- spotify icon size.
 naughty.config.presets.spotify = {
     callback = function(args)
         return true
@@ -66,13 +62,15 @@ terminal = "uxterm"
 editor = os.getenv("EDITOR") or "vim"
 editor_cmd = terminal .. " -e " .. editor
 modkey = "Mod4"
+awful.mouse.snap.edge_enabled = false
+awful.mouse.snap.client_enabled = false
 
--- wallpaper settings.
 local wp_settings = {
     path = os.getenv("HOME") .. "/Wallpapers/" ,
     notification = true,
     timeout  = 3600*5,
     random = 'random',
+    offset = 10,
     show_files = true,
     show_hidden = false,
     show_fontsize = 14,
@@ -83,23 +81,19 @@ AllWallPaperClass = custom_wallpaper.mod:setup(wp_settings)
 -- Table of layouts to cover with awful.layout.inc, order matters.
 awful.layout.layouts = {
     awful.layout.suit.tile,
-    awful.layout.suit.tile.bottom,
     awful.layout.suit.fair,
+    awful.layout.suit.tile.bottom,
     --awful.layout.suit.corner.nw,
     awful.layout.suit.magnifier
 }
 
+-- disable category icon lookup as it's slow.
 menubar.show_categories = false
+menubar.menu_gen.lookup_category_icons = function() end
+
 menubar.cache_entries = true
 menubar.geometry = {height = 19}
 menubar.utils.terminal = terminal
-
--- Keyboard map indicator and switcher
-mykeyboardlayout = awful.widget.keyboardlayout()
-
--- {{{ Wibar
--- Create a textclock widget
-mytextclock = wibox.widget.textclock()
 
 -- Create a wibox for each screen and add it
 local taglist_buttons = gears.table.join(
@@ -143,8 +137,12 @@ local tasklist_buttons = gears.table.join(
                          end) )
 
 -- Re-set wallpaper when a screen's geometry changes (e.g. different resolution)
+--[[
 screen.connect_signal("property::geometry",
-    function() AllWallPaperClass:set(s) end )
+    function()
+        AllWallPaperClass:set(s)
+    end )
+    ]]--
 
 awful.screen.connect_for_each_screen(function(s)
     -- add wallpapers
@@ -152,30 +150,37 @@ awful.screen.connect_for_each_screen(function(s)
 
     awful.tag( { "1", "2", "3", "4", "5", "6", "7", "8", "9" }, s,
         awful.layout.layouts[1] )
+    s.mypromptbox = awful.widget.prompt( {prompt = 'run: '} )
     s.mytaglist = awful.widget.taglist( s, awful.widget.taglist.filter.all,
         taglist_buttons )
     s.mytasklist = awful.widget.tasklist( s,
         awful.widget.tasklist.filter.currenttags, tasklist_buttons )
-    -- Create the wibox
     s.mywibox = awful.wibar({ position = "bottom", screen = s })
 
-    -- Add widgets to the wibox (mostly from custom_widgets)
+    -- Add widgets to the wibox
     s.mywibox:setup {
         layout = wibox.layout.align.horizontal,
             { layout = wibox.layout.fixed.horizontal,
-                s.mytaglist },
+                s.mytaglist, s.mypromptbox },
             s.mytasklist,
             { layout = wibox.layout.fixed.horizontal,
-                custom_widgets.ip, custom_widgets.bat, custom_widgets.thermal,
+                custom_widgets.calm, custom_widgets.ip, custom_widgets.bat, custom_widgets.thermal,
                 custom_widgets.vol, custom_widgets.cpu, custom_widgets.mem,
                 wibox.widget.systray(), custom_widgets.kbd, custom_widgets.date }
             }
     -- add clocks
     s.clock = custom_widgets.clock:create(s,'hours')
-    s.clocktimer = gears.timer.weak_start_new( 30,
-        function () s.clock:update(); return true end )
-    s.clocktimer:start()
 end)
+
+clocktimer = gears.timer {
+    timeout = 30.0 ,
+    callback = function ()
+        for s=1,screen.count() do
+            screen[s].clock:update()
+        end
+    end,
+    autostart = true
+}
 
 AllWallPaperClass:set_timer()
 
@@ -183,7 +188,6 @@ AllWallPaperClass:set_timer()
 
 -- {{{ Mouse bindings
 root.buttons(gears.table.join(
-    -- mostly wallpaper settings.
     awful.button({ }, 3, function ()
         AllWallPaperClass:set_next_random()
     end),
@@ -196,6 +200,7 @@ root.buttons(gears.table.join(
     end),
     -- show info
     awful.button({ 'Shift'}, 3, function()
+        AllWallPaperClass:update_files()
         AllWallPaperClass:show_info()
     end),
     -- toggle files
@@ -249,6 +254,14 @@ globalkeys = gears.table.join(
                 client.focus:raise()
             end
         end),
+    awful.key({ modkey,           }, "c",
+        function ()
+            for s = 1, screen.count() do
+                screen[s].clock:toggle()
+            end
+        end),
+    awful.key({ modkey,           }, "v", naughty.toggle ),
+
     awful.key({ modkey,           }, "i",
         function ()
             for s = 1, screen.count() do
@@ -284,20 +297,21 @@ globalkeys = gears.table.join(
                   end
               end),
     -- Prompt
-    awful.key({ modkey },            "r",     function () io.popen(
-        'dmenu_run -nb "#222222" -nf "#0088dd" -sb "#00aaff" -sf "#333333" -fn "Droid Sans Mono-10" -p run'
-        ) end),
-    awful.key({},                    "Print", function () io.popen("bash -c 'import ~/Desktop/$(date +\"%s\").png'") end),
-
+    awful.key({ modkey },            "r",     function ()
+        awful.screen.focused().mypromptbox:run(  )
+    end),
     awful.key({ modkey }, "x",
               function ()
                   awful.prompt.run {
-                    prompt       = "Run Lua code: ",
+                    prompt       = "lua: ",
                     textbox      = awful.screen.focused().mypromptbox.widget,
                     exe_callback = awful.util.eval,
                     history_path = awful.util.get_cache_dir() .. "/history_eval"
                   }
               end),
+    -- screenshot
+    awful.key({},                    "Print", function () io.popen("bash -c 'import ~/Desktop/$(date +\"%s\").png'") end),
+
     -- Menubar
     awful.key({ modkey }, "p", function() menubar.show() end),
     -- Launchers
@@ -313,9 +327,9 @@ clientkeys = gears.table.join(
         end),
     awful.key({ modkey, "Shift"   }, "c",
     function (c)
-        -- option to keep thunderbird alive
         if c.nokill then
             naughty.notify({text = "Not killing '" .. c.name .. "', use 'kill " .. c.pid .. "' instead.", title= "Info"})
+            c.minimized = true
         else
             c:kill()
         end
@@ -427,11 +441,13 @@ awful.rules.rules = {
 
     -- Floating clients.
     { rule_any = {
-        class = { "Arandr", "Gpick", "Pavucontrol", "Nm-connection-editor" },
+        class = { "Arandr", "Gpick", "Pavucontrol", "Nm-connection-editor",
+            "Blueman-manager" },
         role = { "AlarmWindow", "pop-up" } }, properties = { floating = true,
         placement = awful.placement.centered }},
-
-    { rule = { class = "Thunderbird" },
+-- TODO NOT WORKING CORRECTLY.
+    { rule_any = { class = {"Mail", "Thunderbird"} },
+      except_any = { name = {"Address Book"} },
       properties = { tag = "9", screen = 1, nokill=true } },
     { rule = { class = "TelegramDesktop" },
       properties = { tag = "8", screen = 1, nokill=true } }

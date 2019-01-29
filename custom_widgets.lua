@@ -132,6 +132,27 @@ local iptimer = gears.timer {
         ipwidget.markup = get_ipaddr()
     end }
 
+local function get_calm_state()
+    local text
+    if naughty.is_suspended() then
+        text = "<span color='red'><b> -q </b></span> "
+    else
+        text = "<b> -v </b> "
+    end
+    return text
+end
+local calmwidget = wibox.widget.textbox( get_calm_state() )
+local calmtimer = gears.timer {
+    timeout = 1,
+    autostart = true,
+    callback = function()
+        calmwidget.markup = get_calm_state()
+    end }
+calmwidget:buttons(awful.util.table.join(
+    -- click: start pavucontrol-qt
+    awful.button({ }, 1, naughty.toggle)
+))
+
 local function get_rwthonline_info()
     local http = require("socket.http")
     local out = http.request("http://ist.rwthonline.online")
@@ -239,5 +260,5 @@ volume_widget:buttons(awful.util.table.join(
 
 return { date = datewidget, cpu = cpuwidget, mem = memwidget, kbd = kbdwidget,
     vol = volume_widget, vol_timer = volume_timer, thermal = thermalwidget,
-    bat = batwidget, ip = ipwidget, ip_timer = iptimer, rwth = rwthonline,
-    clock = clock.clock }
+    bat = batwidget, ip = ipwidget, ip_timer = iptimer, calm = calmwidget,
+    calm_timer = calmtimer, rwth = rwthonline, clock = clock.clock }

@@ -1,5 +1,7 @@
--- TODO how about an awesome-wm lua-pam lockscreen that uses sth like this?
 -- TODO does not correctly identify the current screen. Why?
+-- TODO not as lockscreen.
+-- TODO use two wiboxes, lower one with trasparency / blur; upper one with just
+-- the clock / controls.
 
 local Cairo = require("lgi").cairo
 local os = os
@@ -28,8 +30,8 @@ local settings = {
     hours = '#ff6300',
     minutes = '#ff6300',
     seconds = '#ff0000',
-    bg = {1,1,1,0.8},
-    widget_opacity = 0.6,
+    bg = {1,1,1,0.2},
+    widget_background = '#00000000',
     hours_width = 6,
     minutes_width = 4,
     seconds_width = 2,
@@ -50,26 +52,27 @@ local settings = {
         {'xterm', nil},
         {'spotify', nil},
         {'thunderbird', nil},
-        {'inkscape', nil},
-        {'libreoffice', nil},
-        {'e – gimp', function () awful.spawn.easy_async("gimp", function () end) end},
+        {'l – cash', function () awful.spawn.easy_async(
+            os.getenv('HOME') .. '/.scripts/cash', function() end
+            ) end
+        },
         {'pcmanfm', nil},
-        {'chromium', nil},
-        {'v – apply automatic dpi / xrandr', function () awful.spawn.easy_async(
-            os.getenv('HOME') .. '/.scripts/dpi.sh',
-            function () end
-            ) end },
         {'garfield', function () awful.spawn.easy_async(
             os.getenv('HOME') .. '/.scripts/garfield',
             function () end
             ) end },
-        {'wallpaper', function () awful.spawn.with_shell(
-            "echo 'wp_timer:emit_signal(\"timeout\")' | awesome-client")
-            end },
+        {'calvin', function () awful.spawn.easy_async(
+            os.getenv('HOME') .. '/.scripts/garfield -c',
+            function () end
+            ) end },
         {'kill services', function ()
-            awful.spawn.easy_async("killall telegram-deskto whatsie thunderbird caprine owncloud dropbox blueman-applet nm-applet applet.py", function () end)
-        end}
-    },
+            awful.spawn.easy_async(
+                "killall telegram-deskto thunderbird " ..
+                "owncloud blueman-applet nm-applet applet.py",
+                function () end
+            )
+        end }
+        },
     below_add = 0
 }
 
@@ -359,7 +362,7 @@ local function show_clock_face(settings, show_shortcuts, myscreen)
     mybox = wibox {
         ontop = true,
         visible = true,
-        opacity = settings.widget_opacity,
+        bg = settings.widget_background,
         border_width = 0,
         width = mywidth,
         height = myheight,
@@ -512,3 +515,4 @@ function lock()
 end
 
 return {grab = grab_keys, settings = settings, lock = lock}
+-- TODO add unlock() function to release keygrabber if in locked state.

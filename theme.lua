@@ -34,6 +34,8 @@ theme.titlebar_close_button = "true"
 theme.menu_height           = 19
 theme.menu_width            = 300
 
+theme.notification_opacity = 0.9
+
 -- theme.useless_gap = 20
 
 theme.widget_colors = {}

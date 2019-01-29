@@ -142,6 +142,7 @@ function ScreenClock:update()
     end
 end
 
+-- TODO make module cleaner by allowing setup with external settings.
 function ScreenClock:create(screen, which)
     local mywibars = { }
     mywibars.top = create_wibar('top',screen)
